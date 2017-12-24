@@ -32,10 +32,27 @@ class BlockChain(base.Root):
         self.blocks = []
 
     def add_block(self, block: block.Block) -> None:
-        if len(self.blocks) != block.index:
-            raise InconsictentBlockChainException('New block index is unacceptable!')
+        if self.blocks:
+            if len(self.blocks) != block.index:
+                raise InconsictentBlockChainException(
+                    f"New block index is unacceptable! "
+                    f"(last={len(self.blocks)}, new={block.index})"
+                )
+            if self.blocks[-1].ownHash != block.prevHash:
+                raise InconsictentBlockChainException(
+                    f"New block hash is incorrect! "
+                    f"(last={self.blocks[-1].ownHash}, new={block.prevHash})"
+                )
         self.blocks.append(block)
 
+    def generate_next_block(self, data=None) -> block.Block:
+        if not self.blocks:
+            return block.Block.make_genesis_block(data)
 
-
-
+        return block.Block(
+            len(self.blocks),
+            self.blocks[-1].ownHash,
+            self.generate_hash(str(self.generate_timestamp())),
+            block.Payload(data),
+            self.generate_timestamp()
+        )

@@ -4,7 +4,7 @@ import datetime
 class Root(object):
 
     @staticmethod
-    def generate_hash(obj) -> int:
+    def generate_hash(obj: str) -> int:
         return hash(obj)
 
     @staticmethod
@@ -24,7 +24,8 @@ class Singleton(Root):
 
     def __call__(self, *args, **kwargs):
         if self.class_obj.__name__ not in self._instances:
-            self._instances[self.class_obj.__name__] = self.class_obj(*args, **kwargs)
+            self._instances[self.class_obj.__name__] = \
+                self.class_obj(*args, **kwargs)
         return self._instances[self.class_obj.__name__]
 
     def __str__(self) -> str:
@@ -32,5 +33,3 @@ class Singleton(Root):
 
     def __getattr__(self, attr):
         return getattr(self._instances[self.class_obj.__name__], attr)
-
-

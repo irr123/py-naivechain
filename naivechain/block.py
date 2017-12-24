@@ -1,12 +1,11 @@
 import pickle
 import base64
-import datetime
 import json
 from . import base
 
 
 class Payload(base.Root):
-    
+
     @classmethod
     def deserialize(cls, data: str) -> 'Payload':
         return cls(pickle.loads(base64.b64decode(data)))
@@ -24,14 +23,13 @@ class Payload(base.Root):
 class Block(base.Root):
 
     @classmethod
-    def make_genesis_block(cls) -> 'Block':
-        _hash = cls.generate_hash(None)
+    def make_genesis_block(cls, data) -> 'Block':
         return cls(0,
-                   _hash,
-                   _hash,
-                   Payload(None),
+                   cls.generate_hash('-1'),
+                   cls.generate_hash(cls.__name__),
+                   Payload(data),
                    cls.generate_timestamp()
-        )
+                   )
 
     @classmethod
     def deserialize(cls, data: str) -> 'Block':
@@ -43,7 +41,6 @@ class Block(base.Root):
 
         return cls(payload=_payload, **_data)
 
-
     def serialize(self) -> str:
         return json.dumps({
             'index': self.index,
@@ -53,16 +50,16 @@ class Block(base.Root):
             'timestamp': self.timestamp,
         })
 
-    def __init__(self, index: int, prevHash: str, ownHash: str, payload: Payload, timestamp: int) -> None:
+    def __init__(self, index: int,
+                 prevHash: int,
+                 ownHash: int,
+                 payload: Payload,
+                 timestamp: int) -> None:
         self.index = index
         self.prevHash = prevHash
         self.ownHash = ownHash
         self.payload = payload
         self.timestamp = timestamp
-    
 
     def __str__(self) -> str:
         return f"{super().__str__()}_{self.index}, {self.payload}"
-
-
-
