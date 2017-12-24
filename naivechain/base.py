@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 
 
 DEBUG = False
@@ -14,29 +15,27 @@ class NaiveChainException(Root, Exception):
     pass
 
 
+class LoggedRoot(Root):
+
+    @classmethod
+    def log(cls, *args, **kwargs) -> None:
+        if DEBUG:
+            print(f"[{cls.__name__}]:", *args, **kwargs)
+
+
 class NaiveChainObj(Root):
 
     @staticmethod
-    def log(*args, **kwargs) -> None:
-        if DEBUG:
-            print(*args, **kwargs)
-
-    @staticmethod
-    def generate_hash(obj: str) -> int:
-        return hash(obj)
+    def generate_hash(obj: str) -> str:
+        return hashlib.sha224(obj.encode('utf-8')).hexdigest()
 
     @staticmethod
     def generate_timestamp() -> float:
         return datetime.datetime.timestamp(datetime.datetime.now())
 
 
-class LoggedNaiveChain(NaiveChainObj):
-
-    def log(self, *args, **kwargs):
-        super().log(
-            f"[{super().__str__()}]: ",
-            *args, **kwargs
-        )
+class LoggedNaiveChain(LoggedRoot, NaiveChainObj):
+    pass
 
 
 class Singleton(LoggedNaiveChain):

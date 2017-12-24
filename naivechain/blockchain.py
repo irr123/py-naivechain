@@ -44,21 +44,9 @@ class BlockChain(base.LoggedNaiveChain):
 
     def add_block(self, block: block.Block) -> None:
         if self.latest_block:
-            if self.latest_block.index + 1 != block.index:
-                raise InconsictentBlockChainException(
-                    f"New block index is unacceptable! "
-                    f"(last={self.latest_block.index}, new={block.index})"
-                )
-            if self.latest_block.ownHash != block.prevHash:
-                raise InconsictentBlockChainException(
-                    f"New block hash is incorrect! "
-                    f"(last={self.latest_block.ownHash}, new={block.prevHash})"
-                )
-            if self.latest_block.timestamp > block.timestamp:
-                raise InconsictentBlockChainException(
-                    f"Creation timestamp of new block early than existing"
-                    f"last={self.latest_block.timestamp}, new={block.timestamp}"
-                )
+            assert self.latest_block.index < block.index
+            assert self.latest_block.timestamp <= block.timestamp
+            assert block.ownHash == self.generate_hash(self.latest_block.serialize())
         self.log('add', block)
         self.blocks.append(block)
 
@@ -71,7 +59,10 @@ class BlockChain(base.LoggedNaiveChain):
         return block.Block(
             new_index,
             self.latest_block.ownHash,
-            self.generate_hash(str(self.generate_timestamp())),
+            self.generate_hash(self.latest_block.serialize()),
             block.Payload(data),
             self.generate_timestamp()
         )
+
+    def get_data(self):
+        return '\n'.join(map(lambda x: x.payload, self.blocks))

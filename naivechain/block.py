@@ -53,8 +53,8 @@ class Block(base.LoggedNaiveChain):
         return serialized
 
     def __init__(self, index: int,
-                 prevHash: int,
-                 ownHash: int,
+                 prevHash: str,
+                 ownHash: str,
                  payload: Payload,
                  timestamp: int) -> None:
         self.index = index
