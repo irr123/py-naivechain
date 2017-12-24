@@ -4,7 +4,7 @@ import json
 from . import base
 
 
-class Payload(base.Root):
+class Payload(base.NaiveChainObj):
 
     @classmethod
     def deserialize(cls, data: str) -> 'Payload':
@@ -17,10 +17,10 @@ class Payload(base.Root):
         self.data = data
 
     def __str__(self) -> str:
-        return f"{super().__str__()}={self.data}"
+        return f"{super().__str__()}=`{self.data}`"
 
 
-class Block(base.Root):
+class Block(base.LoggedNaiveChain):
 
     @classmethod
     def make_genesis_block(cls, data) -> 'Block':
@@ -42,13 +42,15 @@ class Block(base.Root):
         return cls(payload=_payload, **_data)
 
     def serialize(self) -> str:
-        return json.dumps({
+        serialized = json.dumps({
             'index': self.index,
             'prevHash': self.prevHash,
             'ownHash': self.ownHash,
             'payload': self.payload.serialize(),
             'timestamp': self.timestamp,
         })
+        self.log(self, 'to', serialized)
+        return serialized
 
     def __init__(self, index: int,
                  prevHash: int,
@@ -60,6 +62,7 @@ class Block(base.Root):
         self.ownHash = ownHash
         self.payload = payload
         self.timestamp = timestamp
+        self.log('Init', self)
 
     def __str__(self) -> str:
-        return f"{super().__str__()}_{self.index}, {self.payload}"
+        return f"<№{self.index}, {self.payload}>"

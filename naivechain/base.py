@@ -1,7 +1,25 @@
 import datetime
 
 
+DEBUG = False
+
+
 class Root(object):
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}"
+
+
+class NaiveChainException(Root, Exception):
+    pass
+
+
+class NaiveChainObj(Root):
+
+    @staticmethod
+    def log(*args, **kwargs) -> None:
+        if DEBUG:
+            print(*args, **kwargs)
 
     @staticmethod
     def generate_hash(obj: str) -> int:
@@ -11,11 +29,17 @@ class Root(object):
     def generate_timestamp() -> float:
         return datetime.datetime.timestamp(datetime.datetime.now())
 
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__}"
+
+class LoggedNaiveChain(NaiveChainObj):
+
+    def log(self, *args, **kwargs):
+        super().log(
+            f"[{super().__str__()}]: ",
+            *args, **kwargs
+        )
 
 
-class Singleton(Root):
+class Singleton(LoggedNaiveChain):
 
     _instances = {}
 
@@ -26,6 +50,7 @@ class Singleton(Root):
         if self.class_obj.__name__ not in self._instances:
             self._instances[self.class_obj.__name__] = \
                 self.class_obj(*args, **kwargs)
+            self.log('New instance of', self.class_obj.__name__)
         return self._instances[self.class_obj.__name__]
 
     def __str__(self) -> str:
