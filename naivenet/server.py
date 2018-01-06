@@ -35,12 +35,29 @@ class NaiveServerBaseState(base.LoggedRoot):
 
 class NaiveServerDiscoverState(NaiveServerBaseState):
 
+    BROADCAST_COUNTER_LIMIT = 10
+
+    def __init__(self, server: 'NaiveServer', root: 'NaiveServerGlobalState') -> None:
+        super().__init__(server, root)
+        self._broadcast_counter = self.BROADCAST_COUNTER_LIMIT
+
+    def _increment_broadcast(self) -> bool:
+        self._broadcast_counter += 1
+        if self._broadcast_counter > self.BROADCAST_COUNTER_LIMIT:
+            self._broadcast_counter = 0
+            return True
+        return False
+
     def broadcast_handler(self, data: str, address: str):
         if self.root.add_address(address):
             self.server.client.send_ping(protocol.NaiveMessages.DEFAULT_PORT, address)
             self.log(f'Handle broadcast from `{address}` with \'{data}\' (PING reply)')
         else:
-            self.log(f'Listening broadcast...')
+            if self._increment_broadcast():
+                self.server.client.send_broadcast()
+                self.log('Sending broadcast')
+            else:
+                self.log(f'Listening broadcast...')
 
     def ping_handler(self, data: str, address: str):
         if self.root.add_address(address):
