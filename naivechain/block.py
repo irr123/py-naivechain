@@ -4,7 +4,13 @@ import json
 from . import base
 
 
-class Payload(base.NaiveChainObj):
+class EqMixin(object):
+
+    def __eq__(self, other) -> bool:
+        return self.serialize() == other.serialize()
+
+
+class Payload(base.NaiveChainObj, EqMixin):
 
     @classmethod
     def deserialize(cls, data: str) -> 'Payload':
@@ -20,7 +26,7 @@ class Payload(base.NaiveChainObj):
         return f"{super().__str__()}=`{self.data}`"
 
 
-class Block(base.LoggedNaiveChain):
+class Block(base.LoggedNaiveChain, EqMixin):
 
     @classmethod
     def make_genesis_block(cls, data) -> 'Block':

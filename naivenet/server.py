@@ -1,11 +1,14 @@
 import select
 import socket
+from collections import namedtuple
 from . import protocol, client
 from ..naivechain import base
+
 
 class NaiveServerBaseState(base.LoggedRoot):
 
     handlers = (
+        # 0 - position is msg_type, 1 - prop in global state, 2 - method in specific state
         ('_discover', 'broadcast_handler',),
         ('_discover', 'ping_handler',),
         ('_exchange', 'get_chain_handler',),
@@ -23,8 +26,8 @@ class NaiveServerBaseState(base.LoggedRoot):
                                                     f"{data}({address})")
 
     def __init__(self, server: 'NaiveServer', root: 'NaiveServerGlobalState') -> None:
-        self.root = root
         self.server = server
+        self.root = root
 
     def handle(self, msg_type: int, data: str, address: str) -> None:
         self.select_msg_handler(self, msg_type)(data, address)
@@ -34,12 +37,16 @@ class NaiveServerDiscoverState(NaiveServerBaseState):
 
     def broadcast_handler(self, data: str, address: str):
         if self.root.add_address(address):
-            self.client.send_ping(protocol.NaiveMessages.DEFAULT_PORT, address)
-        self.log('Handle broadcast from', address, 'with', f'\'{data}\'', '(PING reply)')
+            self.server.client.send_ping(protocol.NaiveMessages.DEFAULT_PORT, address)
+            self.log(f'Handle broadcast from `{address}` with \'{data}\' (PING reply)')
+        else:
+            self.log(f'Listening broadcast...')
 
     def ping_handler(self, data: str, address: str):
-        self.root.add_address(address)
-        self.log('Handle ping from', address, 'with', f'\'{data}\'', '(do nothing)')
+        if self.root.add_address(address):
+            self.log(f'Handle ping from `{address}` with \'{data}\' (add new node)')
+        else:
+            self.log(f'Handle ping from `{address}` with \'{data}\' (do nothing)')
 
 
 class NaiveServerExchangeState(NaiveServerBaseState):
@@ -54,22 +61,24 @@ class NaiveServerExchangeState(NaiveServerBaseState):
 class NaiveServerGlobalState(NaiveServerBaseState):
 
     DEFAULT_TYPE = -1
+    active_state_constructor = namedtuple('ActiveState', ['msg_type', 'data', 'address'])
 
     def __init__(self, server: 'NaiveServer', root=None) -> None:
-        self.root = self
+        super().__init__(server, self)
+        self.known_clients = ['127.0.0.1']
         self._discover = NaiveServerDiscoverState(server, self)
         self._exchange = NaiveServerExchangeState(server, self)
-        self.known_clients = []
-        self._active_state = (0, '', '')
+        self._active_state = self.active_state_constructor(0, '', '')  # listen broadcast
 
     def add_address(self, address: str) -> bool:
-        if address not in self.known_clients:
-            self.known_clients.append(address)
-            return True
-        return False
+        if not address or address in self.known_clients:
+            return False
 
-    def handle(self, msg_type: int, data: str, address: str) -> None:
-        if msg_type === self.DEFAULT_TYPE:
+        self.known_clients.append(address)
+        return True
+
+    def handle(self, msg_type: int, data: str = None, address: str = None) -> None:
+        if msg_type == self.DEFAULT_TYPE:
             super().handle(*self._active_state)
         else:
             super().handle(msg_type, data, address)
@@ -93,16 +102,22 @@ class NaiveServer(base.LoggedRoot):
     def disable(self):
         self.is_working = False
 
-    def listen(self) -> None:
+    def _listen(self) -> None:
         while self.is_working:
-            self.log('Waiting for data')
+            self.log('Waiting for data...')
             ready = select.select((self.socket,), tuple(), tuple(), self.TIMEOUT)
             if not ready[0]:
-                self.state.handle(NaiveServerGlobalState.DEFAULT_TYPE, '', '')
+                self.state.handle(NaiveServerGlobalState.DEFAULT_TYPE)
                 continue
 
             raw_data, address = self.socket.recvfrom(self.CHUNK_SIZE)
             msg_type, payload = protocol.NaiveMessages.decode(raw_data)
             self.log(':'.join(str(x) for x in address), 'Received data:', raw_data)
             self.state.handle(int(msg_type), payload, address[0])
+
+    def listen(self) -> None:
+        try:
+            self._listen()
+        except KeyboardInterrupt:
+            self.log(f'Known nodes: {self.state.known_clients}\n')
 

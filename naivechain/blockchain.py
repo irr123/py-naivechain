@@ -65,4 +65,11 @@ class BlockChain(base.LoggedNaiveChain):
         )
 
     def get_data(self):
-        return '\n'.join(map(lambda x: x.payload, self.blocks))
+        repr_counter = 0
+
+        def reprezenter(block: block.Block):
+            nonlocal repr_counter
+            repr_counter += 1
+            return f"{repr_counter} {block.payload}"
+
+        return '\n'.join(map(reprezenter, self.blocks))

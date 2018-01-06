@@ -17,7 +17,9 @@ def test_chain():
     new_chain = naivechain.BlockChain.deserialize(raw_chain)
 
     assert id(blockchain) == id(new_chain) and id(new_chain) == id(naivechain.BlockChain())
-    print('\n\n', blockchain.get_data())
+    for node1, node2 in zip(blockchain.blocks, new_chain.blocks):
+        assert node1 == node2
+    print(f'\nData, which is in chain:\n{blockchain.get_data()}')
 
 
 def test_net_server():
