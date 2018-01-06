@@ -35,10 +35,7 @@ class ChainContainer(base.Root):
             pass
 
     def get_last_index(self) -> int:
-        last = self.chain.latest_block
-        if last:
-            return last.index
-        return 0
+        return len(self.chain.blocks)
 
 
 class NaiveServerBaseState(base.LoggedRoot):
@@ -105,9 +102,11 @@ class NaiveServerDiscoverState(NaiveServerBaseState):
 
         sorted_nodes = sorted(self.root.known_nodes.items(), key=operator.itemgetter(1), reverse=True)
         if self.root.container.get_last_index() < sorted_nodes[0][1]:
-            self.log(f'Neighbour {sorted_nodes[0][0]} has more actual chain, synchronizing')
+            needed_index = self.root.container.get_last_index()
+            self.log(f"Neighbour {sorted_nodes[0][0]} has more "
+                     f"actual chain, synchronizing (needed_index={needed_index})")
             self.server.client.send_get_chain(protocol.NaiveMessagesProto.DEFAULT_PORT,
-                                              sorted_nodes[0][0], self.root.container.get_last_index())
+                                              sorted_nodes[0][0], needed_index)
 
 
 class NaiveServerExchangeState(NaiveServerBaseState):
