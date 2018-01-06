@@ -15,6 +15,16 @@ class NaiveChainException(Root, Exception):
     pass
 
 
+class ISerializable(Root):
+
+    @classmethod
+    def deserialize(cls, data: str) -> 'ISerializable':
+        raise NotImplementedError
+
+    def serialize(self) -> str:
+        raise NotImplementedError
+
+
 class LoggedRoot(Root):
 
     @classmethod

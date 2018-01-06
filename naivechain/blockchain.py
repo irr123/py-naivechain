@@ -10,7 +10,7 @@ AssertionError = InconsictentBlockChainException
 
 
 @base.Singleton
-class BlockChain(base.LoggedNaiveChain):
+class BlockChain(base.LoggedNaiveChain, base.ISerializable):
 
     DELIMITER = '@'
 

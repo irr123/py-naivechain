@@ -10,7 +10,7 @@ class EqMixin(object):
         return self.serialize() == other.serialize()
 
 
-class Payload(base.NaiveChainObj, EqMixin):
+class Payload(base.NaiveChainObj, base.ISerializable, EqMixin):
 
     @classmethod
     def deserialize(cls, data: str) -> 'Payload':
@@ -26,7 +26,7 @@ class Payload(base.NaiveChainObj, EqMixin):
         return f"{super().__str__()}=`{self.data}`"
 
 
-class Block(base.LoggedNaiveChain, EqMixin):
+class Block(base.LoggedNaiveChain, base.ISerializable, EqMixin):
 
     @classmethod
     def make_genesis_block(cls, data) -> 'Block':
@@ -72,3 +72,4 @@ class Block(base.LoggedNaiveChain, EqMixin):
 
     def __str__(self) -> str:
         return f"<№{self.index}, {self.payload}>"
+
