@@ -49,13 +49,13 @@ class NaiveServerDiscoverState(NaiveServerBaseState):
         return False
 
     def broadcast_handler(self, data: str, address: str):
+        self.server.client.send_ping(protocol.NaiveMessages.DEFAULT_PORT, address)
         if self.root.add_address(address):
-            self.server.client.send_ping(protocol.NaiveMessages.DEFAULT_PORT, address)
-            self.log(f'Handle broadcast from `{address}` with \'{data}\' (PING reply)')
+            self.log(f'Handle broadcast from `{address}` with \'{data}\'')
         else:
             if self._increment_broadcast():
                 self.server.client.send_broadcast()
-                self.log('Sending broadcast')
+                self.log('Send broadcast')
             else:
                 self.log(f'Listening broadcast...')
 
